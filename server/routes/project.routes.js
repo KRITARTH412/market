@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import { body } from 'express-validator';
 import {
   getProjects,
@@ -13,22 +14,38 @@ import { checkProjectLimit } from '../middleware/usageCheck.middleware.js';
 
 const router = express.Router();
 
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
 // All routes require authentication
 router.use(authenticate);
 
 // Get all projects
 router.get('/', getProjects);
 
-// Create project
+// Create project with file uploads
 router.post(
   '/',
   authorize('settings'),
   checkProjectLimit,
-  [
-    body('name').trim().notEmpty().withMessage('Project name is required'),
-    body('location.city').optional().trim(),
-    body('status').optional().isIn(['planning', 'under_construction', 'ready_to_move', 'completed'])
-  ],
+  upload.fields([
+    { name: 'coverImage', maxCount: 1 },
+    { name: 'images', maxCount: 10 }
+  ]),
   createProject
 );
 

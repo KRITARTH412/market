@@ -1,14 +1,18 @@
 import { useState } from 'react';
-import { User, Building2, Code, Key } from 'lucide-react';
+import { User, Building2, Code, Key, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import useAuthStore from '../../store/authStore';
+import { usePermissions } from '../../contexts/PermissionContext';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const { user, organization } = useAuthStore();
+  const { canManagePermissions } = usePermissions();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
 
@@ -85,6 +89,7 @@ export default function Settings() {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'organization', label: 'Organization', icon: Building2 },
+    ...(canManagePermissions() ? [{ id: 'permissions', label: 'Permissions', icon: Shield }] : []),
     { id: 'widget', label: 'Widget', icon: Code },
     { id: 'api', label: 'API Keys', icon: Key },
   ];
@@ -203,6 +208,19 @@ export default function Settings() {
                   Save Changes
                 </Button>
               </form>
+            </Card>
+          )}
+
+          {activeTab === 'permissions' && canManagePermissions() && (
+            <Card>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Permission Management</h2>
+              <p className="text-gray-600 mb-6">
+                Manage module and feature permissions for your team members.
+              </p>
+              <Button onClick={() => navigate('/settings/permissions')}>
+                <Shield className="w-4 h-4 mr-2" />
+                Manage Permissions
+              </Button>
             </Card>
           )}
 

@@ -115,6 +115,46 @@ const organizationSchema = new mongoose.Schema({
   isDeleted: {
     type: Boolean,
     default: false
+  },
+  onboarding: {
+    completed: {
+      type: Boolean,
+      default: false
+    },
+    currentStep: {
+      type: Number,
+      default: 1
+    },
+    steps: {
+      organization: {
+        type: Boolean,
+        default: false
+      },
+      team: {
+        type: Boolean,
+        default: false
+      },
+      project: {
+        type: Boolean,
+        default: false
+      },
+      tour: {
+        type: Boolean,
+        default: false
+      },
+      settings: {
+        type: Boolean,
+        default: false
+      }
+    },
+    skipped: {
+      type: Boolean,
+      default: false
+    },
+    completedAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true

@@ -1,5 +1,5 @@
 import { generateEmbedding, generateStreamingChatCompletion, countTokens } from './openai.service.js';
-import { queryVectors } from './pinecone.service.js';
+import { queryVectors } from './vector.service.js';
 import ChatSession from '../models/ChatSession.model.js';
 import QueryLog from '../models/QueryLog.model.js';
 import Document from '../models/Document.model.js';

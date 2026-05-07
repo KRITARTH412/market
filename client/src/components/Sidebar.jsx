@@ -19,6 +19,7 @@ const navigation = [
   { name: 'Projects', href: '/projects', icon: Building2 },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'AI Chat', href: '/chat', icon: MessageSquare },
+  { name: 'Dual-Mode Chat', href: '/chat-dual', icon: MessageSquare },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Team', href: '/team', icon: UsersRound },

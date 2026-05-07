@@ -51,7 +51,18 @@ const useAuthStore = create((set) => ({
         isLoading: false,
       });
     } catch (error) {
+      // If token is invalid or expired, clear auth state
+      console.error('Failed to fetch current user:', error);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       set({ user: null, organization: null, isAuthenticated: false, isLoading: false });
+      
+      // Redirect to login if not already there
+      if (window.location.pathname !== '/login' && 
+          window.location.pathname !== '/register' && 
+          window.location.pathname !== '/forgot-password') {
+        window.location.href = '/login';
+      }
     }
   },
 

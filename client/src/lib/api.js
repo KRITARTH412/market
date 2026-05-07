@@ -48,17 +48,33 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed, logout user
+        // Refresh failed, logout user and redirect to login
+        console.error('Token refresh failed:', refreshError);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        
+        // Show toast notification
+        toast.error('Your session has expired. Please login again.');
+        
+        // Redirect to login page
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
 
+    // If still 401 after retry, redirect to login
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      toast.error('Your session has expired. Please login again.');
+      window.location.href = '/login';
+      return Promise.reject(error);
+    }
+
     // Handle other errors
     const message = error.response?.data?.error || error.message || 'An error occurred';
     
+    // Don't show toast for 401 errors (already handled above)
     if (error.response?.status !== 401) {
       toast.error(message);
     }
@@ -68,3 +84,6 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Named export for convenience
+export { api };

@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import React,{ useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
+import { PermissionProvider } from './contexts/PermissionContext';
 
 // Layouts
 import AuthLayout from './layouts/AuthLayout';
@@ -17,12 +18,15 @@ import Projects from './pages/projects/Projects';
 import ProjectDetail from './pages/projects/ProjectDetail';
 import Documents from './pages/documents/Documents';
 import Chat from './pages/chat/Chat';
+import ChatDualMode from './pages/chat/ChatDualMode';
 import Leads from './pages/leads/Leads';
 import LeadDetail from './pages/leads/LeadDetail';
 import Analytics from './pages/analytics/Analytics';
 import Settings from './pages/settings/Settings';
+import Permissions from './pages/settings/Permissions';
 import Billing from './pages/billing/Billing';
 import Team from './pages/team/Team';
+import Onboarding from './pages/onboarding/Onboarding';
 
 // Loading component
 import LoadingScreen from './components/LoadingScreen';
@@ -74,62 +78,76 @@ function App() {
   }
 
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route element={<AuthLayout />}>
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgotPassword />
-            </PublicRoute>
-          }
-        />
-      </Route>
+    <PermissionProvider>
+      <Routes>
+        {/* Public Routes */}
+        <Route element={<AuthLayout />}>
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
+        </Route>
 
-      {/* Protected Routes */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/leads" element={<Leads />} />
-        <Route path="/leads/:id" element={<LeadDetail />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/team" element={<Team />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/billing" element={<Billing />} />
-      </Route>
+        {/* Onboarding Route */}
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Redirect root to dashboard or login */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      
-      {/* 404 */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+        {/* Protected Routes */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/:id" element={<ProjectDetail />} />
+          <Route path="/documents" element={<Documents />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/chat-dual" element={<ChatDualMode />} />
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/leads/:id" element={<LeadDetail />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/permissions" element={<Permissions />} />
+          <Route path="/billing" element={<Billing />} />
+        </Route>
+
+        {/* Redirect root to dashboard or login */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        
+        {/* 404 */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </PermissionProvider>
   );
 }
 

@@ -50,6 +50,9 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
   });
 });
 
+// Alias for overview endpoint
+export const getOverview = getDashboardStats;
+
 export const getLeadAnalytics = asyncHandler(async (req, res) => {
   const leadsByStatus = await Lead.aggregate([
     { $match: { organizationId: req.organizationId, isDeleted: false } },

@@ -1,6 +1,6 @@
 import { validationResult } from 'express-validator';
 import { extractPropertyRequirements, generateEmbedding } from '../services/openai.service.js';
-import { queryVectors } from '../services/pinecone.service.js';
+import { queryVectors } from '../services/vector.service.js';
 import Project from '../models/Project.model.js';
 import Document from '../models/Document.model.js';
 import { asyncHandler } from '../middleware/errorHandler.js';

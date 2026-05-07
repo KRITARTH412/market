@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Mail, Shield } from 'lucide-react';
+import { UserPlus, Mail, Shield, Bot } from 'lucide-react';
 import api from '../../lib/api';
+import { grantGlobalBotAccess, revokeGlobalBotAccess } from '../../lib/chatDualModeApi';
 import toast from 'react-hot-toast';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -21,7 +22,7 @@ export default function Team() {
 
   const fetchTeamMembers = async () => {
     try {
-      const response = await api.get('/organizations/members');
+      const response = await api.get('/org/members');
       setMembers(response.data.members);
     } catch (error) {
       toast.error('Failed to load team members');
@@ -36,7 +37,7 @@ export default function Team() {
 
   const handleRoleChange = async (memberId, newRole) => {
     try {
-      await api.patch(`/organizations/members/${memberId}`, { role: newRole });
+      await api.patch(`/org/members/${memberId}/role`, { role: newRole });
       setMembers(members.map(m => 
         m._id === memberId ? { ...m, role: newRole } : m
       ));
@@ -50,11 +51,27 @@ export default function Team() {
     if (!confirm('Are you sure you want to remove this member?')) return;
 
     try {
-      await api.delete(`/organizations/members/${memberId}`);
+      await api.patch(`/org/members/${memberId}/deactivate`);
       setMembers(members.filter(m => m._id !== memberId));
       toast.success('Member removed successfully');
     } catch (error) {
       toast.error('Failed to remove member');
+    }
+  };
+
+  const handleToggleGlobalBotAccess = async (memberId, hasAccess) => {
+    try {
+      if (hasAccess) {
+        await revokeGlobalBotAccess(memberId);
+        toast.success('Global bot access revoked');
+      } else {
+        await grantGlobalBotAccess(memberId);
+        toast.success('Global bot access granted');
+      }
+      // Refresh members list
+      fetchTeamMembers();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to update global bot access');
     }
   };
 
@@ -100,6 +117,7 @@ export default function Team() {
                 <Table.Header>Member</Table.Header>
                 <Table.Header>Email</Table.Header>
                 <Table.Header>Role</Table.Header>
+                <Table.Header>Global Bot</Table.Header>
                 <Table.Header>Status</Table.Header>
                 <Table.Header>Joined</Table.Header>
                 {isOwnerOrAdmin && <Table.Header>Actions</Table.Header>}
@@ -124,6 +142,23 @@ export default function Team() {
                     <StatusBadge status={member.role} />
                   </Table.Cell>
                   <Table.Cell>
+                    <div className="flex items-center space-x-2">
+                      {member.permissions?.includes('GLOBAL_BOT_ACCESS') || 
+                       member.role === 'SUPER_ADMIN' || 
+                       member.role === 'ORG_OWNER' ||
+                       member.role === 'ORG_ADMIN' ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <Bot className="w-3 h-3 mr-1" />
+                          Enabled
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Disabled
+                        </span>
+                      )}
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell>
                     <StatusBadge status={member.status || 'active'} />
                   </Table.Cell>
                   <Table.Cell>
@@ -143,6 +178,19 @@ export default function Team() {
                               <option value="agent">Agent</option>
                               <option value="viewer">Viewer</option>
                             </select>
+                            {/* Only show toggle for non-admin roles */}
+                            {member.role !== 'ORG_ADMIN' && member.role !== 'ORG_OWNER' && member.role !== 'SUPER_ADMIN' && (
+                              <button
+                                onClick={() => handleToggleGlobalBotAccess(
+                                  member._id,
+                                  member.permissions?.includes('GLOBAL_BOT_ACCESS')
+                                )}
+                                className="text-sm text-blue-600 hover:text-blue-800"
+                                title={member.permissions?.includes('GLOBAL_BOT_ACCESS') ? 'Revoke global bot access' : 'Grant global bot access'}
+                              >
+                                <Bot className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleRemove(member._id)}
                               className="text-red-600 hover:text-red-800 text-sm"
@@ -183,6 +231,35 @@ export default function Team() {
           <div>
             <h3 className="font-medium text-gray-900">Viewer</h3>
             <p className="text-sm text-gray-600">Read-only access to projects and analytics</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Global Bot Access Info */}
+      <Card>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Bot className="w-5 h-5 mr-2" />
+          Global Bot Access
+        </h2>
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">
+            The Global Bot allows users to search and query across all projects in the organization. 
+          </p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="font-medium text-green-900 mb-2">Default Access:</h3>
+            <ul className="text-sm text-green-800 space-y-1 list-disc list-inside">
+              <li><strong>Super Admin</strong> - Always has access</li>
+              <li><strong>Organization Owner</strong> - Always has access</li>
+              <li><strong>Organization Admin</strong> - Always has access</li>
+            </ul>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-medium text-blue-900 mb-2">Grant access to other roles:</h3>
+            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+              <li>Click the <Bot className="w-3 h-3 inline" /> icon in the Actions column</li>
+              <li>User will be able to access the organization-wide chat bot</li>
+              <li>Click again to revoke access</li>
+            </ol>
           </div>
         </div>
       </Card>

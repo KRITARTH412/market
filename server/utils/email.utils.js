@@ -1,19 +1,37 @@
 import nodemailer from 'nodemailer';
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_PORT == 465,
+// Lazy-load transporter to ensure env vars are loaded first
+let transporter = null;
+
+const getTransporter = () => {
+  if (!transporter) {
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.warn('Email configuration incomplete - emails will not be sent');
+      return null;
+    }
+
+    transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT) || 587,
+      secure: parseInt(process.env.EMAIL_PORT) === 465,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
       }
     });
+  }
+  return transporter;
+};
 
 // Send email function
 export const sendEmail = async (to, subject, html, text = null) => {
   try {
+    const mailer = getTransporter();
+    if (!mailer) {
+      console.warn('Email not configured - skipping email send');
+      return { success: false, error: 'Email not configured' };
+    }
+
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to,
@@ -22,7 +40,7 @@ export const sendEmail = async (to, subject, html, text = null) => {
       text: text || html.replace(/<[^>]*>/g, '') // Strip HTML for text version
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await mailer.sendMail(mailOptions);
     console.log('Email sent:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {

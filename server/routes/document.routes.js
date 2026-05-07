@@ -5,7 +5,8 @@ import {
   getDocuments,
   getDocument,
   deleteDocument,
-  getVectorizationStatus
+  getVectorizationStatus,
+  downloadDocument
 } from '../controllers/document.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { checkDocumentLimit, checkStorageLimit } from '../middleware/usageCheck.middleware.js';
@@ -62,5 +63,8 @@ router.delete('/:id', authorize('upload'), deleteDocument);
 
 // Get vectorization status
 router.get('/:id/vectorization', getVectorizationStatus);
+
+// Download document
+router.get('/:id/download', downloadDocument);
 
 export default router;

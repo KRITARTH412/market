@@ -22,6 +22,11 @@ const chatSessionSchema = new mongoose.Schema({
     ref: 'Project',
     default: null
   },
+  chatMode: {
+    type: String,
+    enum: ['global', 'project'],
+    required: true
+  },
   source: {
     type: String,
     enum: ['internal', 'widget'],
@@ -82,6 +87,8 @@ chatSessionSchema.index({ organizationId: 1, userId: 1 });
 chatSessionSchema.index({ organizationId: 1, leadId: 1 });
 chatSessionSchema.index({ organizationId: 1, projectId: 1 });
 chatSessionSchema.index({ organizationId: 1, source: 1 });
+chatSessionSchema.index({ organizationId: 1, userId: 1, projectId: 1 });
+chatSessionSchema.index({ organizationId: 1, userId: 1, chatMode: 1 });
 
 // Method to add message
 chatSessionSchema.methods.addMessage = function(role, content, sources = [], tokenCount = 0) {

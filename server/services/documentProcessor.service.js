@@ -1,7 +1,7 @@
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { generateEmbedding, transcribeAudio } from './openai.service.js';
-import { upsertVectors } from './pinecone.service.js';
+import { upsertVectors } from './vector.service.js';
 import Document from '../models/Document.model.js';
 
 // Chunk text into segments

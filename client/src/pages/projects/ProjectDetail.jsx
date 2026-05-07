@@ -18,6 +18,7 @@ import Card from '../../components/Card';
 import StatusBadge from '../../components/StatusBadge';
 import Badge from '../../components/Badge';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import AssignAgentsModal from '../../components/AssignAgentsModal';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -25,6 +26,7 @@ export default function ProjectDetail() {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAssignAgentsModal, setShowAssignAgentsModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -238,7 +240,12 @@ export default function ProjectDetail() {
             ) : (
               <p className="text-gray-500 text-sm">No agents assigned</p>
             )}
-            <Button variant="outline" size="sm" className="w-full mt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-4"
+              onClick={() => setShowAssignAgentsModal(true)}
+            >
               Assign Agents
             </Button>
           </Card>
@@ -286,6 +293,15 @@ export default function ProjectDetail() {
         message={`Are you sure you want to delete "${project.name}"? This action cannot be undone.`}
         confirmText="Delete"
         loading={deleting}
+      />
+
+      {/* Assign Agents Modal */}
+      <AssignAgentsModal
+        isOpen={showAssignAgentsModal}
+        onClose={() => setShowAssignAgentsModal(false)}
+        projectId={id}
+        currentAgents={project.assignedAgents || []}
+        onSuccess={fetchProject}
       />
     </div>
   );

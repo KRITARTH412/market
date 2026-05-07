@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getDashboardStats,
+  getOverview,
   getLeadAnalytics,
   getQueryAnalytics,
   getAgentPerformance,
@@ -13,6 +14,9 @@ const router = express.Router();
 // All routes require authentication and analytics permission
 router.use(authenticate);
 router.use(authorize('analytics'));
+
+// Get overview stats (alias for dashboard)
+router.get('/overview', getOverview);
 
 // Get dashboard overview stats
 router.get('/dashboard', getDashboardStats);

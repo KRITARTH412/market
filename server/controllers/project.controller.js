@@ -28,28 +28,83 @@ export const getProjects = asyncHandler(async (req, res) => {
 
 // Create project
 export const createProject = asyncHandler(async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+  try {
+    // Parse JSON fields from multipart form data
+    const name = req.body.name;
+    const description = req.body.description;
+    const status = req.body.status;
+    const location = JSON.parse(req.body.location || '{}');
+    const specifications = JSON.parse(req.body.specifications || '{}');
+    const bhkConfigurations = JSON.parse(req.body.bhkConfigurations || '[]');
+    const amenities = JSON.parse(req.body.amenities || '[]');
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Project name is required' });
+    }
+
+    // Handle image uploads
+    let coverImageUrl = null;
+    const imageUrls = [];
+
+    // Upload cover image to Cloudinary if provided
+    if (req.files && req.files.coverImage && req.files.coverImage[0]) {
+      const { uploadFile } = await import('../services/cloudinary.service.js');
+      const coverResult = await uploadFile(
+        req.files.coverImage[0].buffer,
+        req.files.coverImage[0].originalname,
+        req.organizationId,
+        'projects/covers'
+      );
+      coverImageUrl = coverResult.url;
+    }
+
+    // Upload gallery images to Cloudinary if provided
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      const { uploadFile } = await import('../services/cloudinary.service.js');
+      for (const image of req.files.images) {
+        const imageResult = await uploadFile(
+          image.buffer,
+          image.originalname,
+          req.organizationId,
+          'projects/gallery'
+        );
+        imageUrls.push({
+          url: imageResult.url,
+          caption: ''
+        });
+      }
+    }
+
+    // Create project
+    const project = new Project({
+      name: name.trim(),
+      description: description || '',
+      status: status || 'planning',
+      location,
+      specifications,
+      amenities,
+      coverImage: coverImageUrl,
+      images: imageUrls,
+      organizationId: req.organizationId,
+      createdBy: req.userId
+    });
+
+    await project.save();
+
+    // Increment project count
+    await req.organization.incrementUsage('projectCount');
+
+    await createAuditLog('project.create', req, { projectName: project.name }, 'project', project._id);
+
+    res.status(201).json({
+      message: 'Project created successfully',
+      project
+    });
+  } catch (error) {
+    console.error('Create project error:', error);
+    res.status(500).json({ error: error.message || 'Failed to create project' });
   }
-
-  const project = new Project({
-    ...req.body,
-    organizationId: req.organizationId,
-    createdBy: req.userId
-  });
-
-  await project.save();
-
-  // Increment project count
-  await req.organization.incrementUsage('projectCount');
-
-  await createAuditLog('project.create', req, { projectName: project.name }, 'project', project._id);
-
-  res.status(201).json({
-    message: 'Project created successfully',
-    project
-  });
 });
 
 // Get single project

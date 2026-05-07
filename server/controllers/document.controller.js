@@ -14,6 +14,15 @@ export const uploadDocument = asyncHandler(async (req, res) => {
 
   const { projectId, category, tags } = req.body;
 
+  // Verify the buffer is a valid PDF
+  if (req.file.originalname.toLowerCase().endsWith('.pdf')) {
+    const header = req.file.buffer.slice(0, 4).toString('utf-8');
+    console.log('📄 PDF header check:', header, '(should be %PDF)');
+    if (!header.startsWith('%PDF')) {
+      return res.status(400).json({ error: 'Invalid PDF file - file may be corrupted' });
+    }
+  }
+
   // Upload to Cloudinary
   const uploadResult = await uploadFile(
     req.file.buffer,
@@ -21,6 +30,13 @@ export const uploadDocument = asyncHandler(async (req, res) => {
     req.organizationId,
     'documents'
   );
+
+  console.log('📤 Upload result:', {
+    filename: req.file.originalname,
+    bufferSize: req.file.buffer.length,
+    uploadedSize: uploadResult.bytes,
+    url: uploadResult.url
+  });
 
   // Parse document
   const fileType = req.file.originalname.split('.').pop().toLowerCase();
@@ -62,11 +78,16 @@ export const uploadDocument = asyncHandler(async (req, res) => {
 
   // Start vectorization in background
   vectorizeDocument(document._id, req.organizationId, projectId)
+    .then(() => {
+      console.log(`✓ Document ${document.fileName} vectorized successfully`);
+    })
     .catch(async (error) => {
-      console.error('Vectorization failed:', error);
-      // Send error notification
-      const emailContent = emailTemplates.documentProcessingFailed(document.fileName, error.message);
-      await sendEmail(req.user.email, emailContent.subject, emailContent.html);
+      console.error('Vectorization failed:', error.message);
+      // Don't send email for connection errors - likely temporary
+      if (!error.message.includes('ECONNRESET') && !error.message.includes('network')) {
+        const emailContent = emailTemplates.documentProcessingFailed(document.fileName, error.message);
+        await sendEmail(req.user.email, emailContent.subject, emailContent.html);
+      }
     });
 
   res.status(201).json({
@@ -136,9 +157,9 @@ export const deleteDocument = asyncHandler(async (req, res) => {
   // Delete from Cloudinary
   await deleteFile(document.cloudinaryPublicId);
 
-  // Delete vectors from Pinecone
+  // Delete vectors from MongoDB
   if (document.vectorized) {
-    const { deleteVectorsByDocument } = await import('../services/pinecone.service.js');
+    const { deleteVectorsByDocument } = await import('../services/vector.service.js');
     await deleteVectorsByDocument(req.organizationId, document._id);
   }
 
@@ -179,4 +200,20 @@ export const getVectorizationStatus = asyncHandler(async (req, res) => {
     chunkCount: document.chunkCount,
     error: document.vectorizationError
   });
+});
+
+// Download document
+export const downloadDocument = asyncHandler(async (req, res) => {
+  const document = await Document.findOne({
+    _id: req.params.id,
+    organizationId: req.organizationId,
+    isDeleted: false
+  });
+
+  if (!document) {
+    return res.status(404).json({ error: 'Document not found' });
+  }
+
+  // Redirect to Cloudinary URL for direct download
+  res.redirect(document.cloudinaryUrl);
 });
